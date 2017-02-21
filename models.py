@@ -20,7 +20,7 @@ class bern_emb_model():
         self.p_mask = tf.range(d.cs/2,d.n_minibatch + d.cs/2)
         rows = tf.tile(tf.expand_dims(tf.range(0, d.cs/2),[0]), [d.n_minibatch, 1])
         columns = tf.tile(tf.expand_dims(tf.range(0, d.n_minibatch), [1]), [1, d.cs/2])
-        self.ctx_mask = tf.concat(1,[rows+columns, rows+columns +d.cs/2+1])
+        self.ctx_mask = tf.concat([rows+columns, rows+columns +d.cs/2+1], 1)
 
         # Embedding vectors
         self.rho = tf.Variable(tf.random_normal([d.L, self.K])/self.K)
@@ -28,10 +28,10 @@ class bern_emb_model():
         # Context vectors
         self.alpha = tf.Variable(tf.random_normal([d.L, self.K])/self.K)
 
-        # Taget words 
+        # Taget words
         self.p_idx = tf.gather(self.words, self.p_mask)
         self.p_rho = tf.squeeze(tf.gather(self.rho, self.p_idx))
-        
+
         # Negative samples
         unigram_logits = tf.tile(tf.expand_dims(tf.log(tf.constant(d.unigram)), [0]), [d.n_minibatch, 1])
         self.n_idx = tf.multinomial(unigram_logits, d.ns)
@@ -43,9 +43,9 @@ class bern_emb_model():
         ctx_sum = tf.reduce_sum(self.ctx_alphas,[1])
 
         # Natural parameter
-        p_eta = tf.expand_dims(tf.reduce_sum(tf.mul(self.p_rho, ctx_sum),-1),1)
-        n_eta = tf.reduce_sum(tf.mul(self.n_rho, tf.tile(tf.expand_dims(ctx_sum,1),[1,d.ns,1])),-1)
-        
+        p_eta = tf.expand_dims(tf.reduce_sum(tf.multiply(self.p_rho, ctx_sum),-1),1)
+        n_eta = tf.reduce_sum(tf.multiply(self.n_rho, tf.tile(tf.expand_dims(ctx_sum,1),[1,d.ns,1])),-1)
+
         # Conditional likelihood
         self.y_pos = Bernoulli(logits = p_eta)
         self.y_neg = Bernoulli(logits = n_eta)
